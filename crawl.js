@@ -37,6 +37,7 @@
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       }
       #wc-modal h1 {
+        position: unset;
         font-size: 15px; font-weight: 700; color: #1a202c; margin-bottom: 16px;
       }
       .wc-close {
