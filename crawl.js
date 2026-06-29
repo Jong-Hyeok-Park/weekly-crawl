@@ -1,20 +1,55 @@
 (async () => {
-  // BASE_DATE = 오늘 -3일이 default
-  const today = new Date();
-  const defaultDate = new Date(today);
-  defaultDate.setDate(today.getDate() - 3);
-  const defaultStr = defaultDate.toISOString().split('T')[0];
-
-  const input = prompt("기준날짜 입력\n예: 2026-06-19", defaultStr);
-  if (!input) return;
-
   const formatDate = (date) => date.toISOString().split('T')[0];
 
-  const BASE = new Date(input);
-  const A1 = new Date(BASE);
-  const B1 = new Date(BASE); B1.setDate(BASE.getDate() - 4);
-  const A2 = new Date(BASE); A2.setFullYear(BASE.getFullYear() - 1);
-  const B2 = new Date(B1);   B2.setFullYear(B1.getFullYear() - 1);
+  const isValidDate = (str) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+    const d = new Date(str);
+    return d instanceof Date && !isNaN(d) && formatDate(d) === str;
+  };
+
+  // 전주 월~금 기본값 계산
+  const getLastWeek = () => {
+    const today = new Date();
+    const day = today.getDay(); // 0=일, 1=월 ... 6=토
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setDate(thisMonday.getDate() - 7);
+    const lastFriday = new Date(lastMonday);
+    lastFriday.setDate(lastMonday.getDate() + 4);
+    return { start: formatDate(lastMonday), end: formatDate(lastFriday) };
+  };
+
+  const lastWeek = getLastWeek();
+
+  // 시작일 입력
+  const inputStart = prompt("주간 시작일 (전주 월요일)\n형식: YYYY-MM-DD", lastWeek.start);
+  if (!inputStart) return;
+  if (!isValidDate(inputStart)) {
+    alert("❌ 시작일 형식이 올바르지 않습니다.\n예: 2026-06-22");
+    return;
+  }
+
+  // 종료일 입력
+  const inputEnd = prompt("주간 종료일 (전주 금요일)\n형식: YYYY-MM-DD", lastWeek.end);
+  if (!inputEnd) return;
+  if (!isValidDate(inputEnd)) {
+    alert("❌ 종료일 형식이 올바르지 않습니다.\n예: 2026-06-26");
+    return;
+  }
+
+  // 시작일 < 종료일 체크
+  if (new Date(inputStart) >= new Date(inputEnd)) {
+    alert("❌ 종료일은 시작일보다 이후여야 합니다.");
+    return;
+  }
+
+  const formatDate2 = (date) => date.toISOString().split('T')[0];
+
+  const A1 = new Date(inputEnd);
+  const B1 = new Date(inputStart);
+  const A2 = new Date(A1); A2.setFullYear(A1.getFullYear() - 1);
+  const B2 = new Date(B1); B2.setFullYear(B1.getFullYear() - 1);
 
   const VALIDATION = {
     "전년누계": { val1: "3,378,895", val2: "1,887,810" },
@@ -56,10 +91,10 @@
 
   // 실제 크롤링
   const targets = {
-    "전년누계": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${A2.getFullYear()}-01-01&end_date=${formatDate(A2)}`,
-    "금년누계": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${A1.getFullYear()}-01-01&end_date=${formatDate(A1)}`,
-    "전년주간": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${formatDate(B2)}&end_date=${formatDate(A2)}`,
-    "금주주간": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${formatDate(B1)}&end_date=${formatDate(A1)}`,
+    "전년누계": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${A2.getFullYear()}-01-01&end_date=${formatDate2(A2)}`,
+    "금년누계": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${A1.getFullYear()}-01-01&end_date=${formatDate2(A1)}`,
+    "전년주간": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${formatDate2(B2)}&end_date=${formatDate2(A2)}`,
+    "금주주간": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${formatDate2(B1)}&end_date=${formatDate2(A1)}`,
   };
 
   const results = {};
