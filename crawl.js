@@ -54,6 +54,7 @@
         font-size: 11px; font-weight: 600; color: #718096;
       }
       .wc-field input[type="date"] {
+        box-sizing: border-box;
         padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px;
         font-size: 13px; color: #2d3748; background: #fff; outline: none; width: 100%;
       }
