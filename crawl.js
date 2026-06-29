@@ -147,7 +147,7 @@
     $('body').append(html);
 
     // ⑤ 닫기
-    $(document).on('click', 'span.wc-close, #wc-overlay', () => {
+    $(document).on('click', 'span.wc-close', () => {
       $('#wc-overlay, #wc-modal').remove();
       location.reload();
     });
