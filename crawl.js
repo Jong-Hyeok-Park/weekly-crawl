@@ -18,7 +18,14 @@
       lastMonday.setDate(thisMonday.getDate() - 7);
       const lastFriday = new Date(lastMonday);
       lastFriday.setDate(lastMonday.getDate() + 4);
-      const fmt = (d) => d.toISOString().split('T')[0];
+      // toISOString()가 UTC 기준으로 변환하면서 대한민국 기준에서는 오전에 실행하면 날짜가 하루 밀려씩 밀려버림
+      // const fmt = (d) => d.toISOString().split('T')[0];
+      const fmt = (d) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      };
       return { start: fmt(lastMonday), end: fmt(lastFriday) };
     };
 
