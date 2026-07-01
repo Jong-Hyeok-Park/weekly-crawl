@@ -8,7 +8,15 @@
   function initCrawler() {
     const $ = window.jQuery;
 
-    // ② 전주 월~금 기본값
+    // ② 날짜 포맷 공통 함수 (UTC 변환 없이 로컬 기준)
+    const formatDate = (d) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    // ③ 전주 월~금 기본값
     const getLastWeek = () => {
       const today = new Date();
       const day = today.getDay();
@@ -18,20 +26,24 @@
       lastMonday.setDate(thisMonday.getDate() - 7);
       const lastFriday = new Date(lastMonday);
       lastFriday.setDate(lastMonday.getDate() + 4);
-      // toISOString()가 UTC 기준으로 변환하면서 대한민국 기준에서는 오전에 실행하면 날짜가 하루 밀려씩 밀려버림
-      // const fmt = (d) => d.toISOString().split('T')[0];
-      const fmt = (d) => {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-      };
-      return { start: fmt(lastMonday), end: fmt(lastFriday) };
+      return { start: formatDate(lastMonday), end: formatDate(lastFriday) };
     };
 
     const lastWeek = getLastWeek();
 
-    // ③ CSS 스타일 삽입
+    // ④ 요일 반환
+    const getDayLabel = (dateStr) => {
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      return '(' + days[new Date(dateStr).getDay()] + ')';
+    };
+
+    // ⑤ M.D 형식 반환
+    const getShortDate = (dateStr) => {
+      const d = new Date(dateStr);
+      return `${d.getMonth() + 1}.${d.getDate()}`;
+    };
+
+    // ④ CSS 스타일 삽입
     $('<style>').text(`
       #wc-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -39,13 +51,13 @@
       }
       #wc-modal {
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 460px; background: #f0f4f8; border-radius: 12px;
+        width: 525px; background: #f0f4f8; border-radius: 12px;
         padding: 24px; z-index: 999999; font-family: 'Segoe UI', sans-serif;
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       }
       #wc-modal h1 {
         position: unset;
-        font-size: 15px; font-weight: 700; color: #1a202c; margin-bottom: 16px;
+        font-size: 15px; font-weight: 700; color: #1a202c; margin-bottom: 16px !important;
       }
       .wc-close {
         float: right; cursor: pointer; color: #a0aec0;
@@ -53,13 +65,16 @@
       }
       .wc-close:hover { color: #2d3748; }
       .wc-row {
-        display: flex; gap: 10px; margin-bottom: 12px;
+        display: flex; gap: 10px; margin-bottom: 12px !important;
       }
       .wc-field {
         flex: 1; display: flex; flex-direction: column; gap: 4px;
       }
       .wc-field label {
         font-size: 11px; font-weight: 600; color: #718096;
+      }
+      .wc-day-label {
+        font-size: 11px; color: #667eea; font-weight: 600; margin-top: 3px !important;
       }
       .wc-field input[type="date"] {
         box-sizing: border-box;
@@ -70,7 +85,7 @@
         border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
       }
       #wc-startBtn {
-        width: 100%; padding: 10px;
+        width: 100%; padding: 10px !important;
         background: linear-gradient(135deg, #667eea, #764ba2);
         color: white; border: none; border-radius: 8px;
         font-size: 13px; font-weight: 600; cursor: pointer;
@@ -78,48 +93,48 @@
       #wc-startBtn:hover { opacity: 0.9; }
       #wc-startBtn:disabled { opacity: 0.5; cursor: not-allowed; }
       #wc-status {
-        margin-top: 12px; padding: 8px 12px; border-radius: 8px;
+        margin-top: 12px !important; padding: 8px 12px !important; border-radius: 8px;
         font-size: 12px; font-weight: 600; display: none;
       }
       #wc-status.validating { background: #ebf8ff; color: #2b6cb0; display: block; }
       #wc-status.success    { background: #f0fff4; color: #276749; display: block; }
       #wc-status.error      { background: #fff5f5; color: #c53030; display: block; }
-      #wc-resultWrap { margin-top: 12px; display: none; }
+      #wc-resultWrap { margin-top: 12px !important; display: none; }
       #wc-resultWrap table {
         width: 100%; border-collapse: collapse; font-size: 12px;
         background: #fff; border-radius: 8px; overflow: hidden;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
       #wc-resultWrap th {
-        background: #667eea; color: #fff; padding: 7px 10px;
+        background: #667eea; color: #fff; padding: 7px 10px !important;
         text-align: center; font-weight: 600;
       }
       #wc-resultWrap td {
-        padding: 7px 10px; text-align: right; color: #2d3748;
+        padding: 7px 10px !important; text-align: right; color: #2d3748;
         border-bottom: 1px solid #e2e8f0;
       }
-      #wc-resultWrap td.wc-label { text-align: left; font-weight: 600; color: #718096; }
+      #wc-resultWrap td.wc-label { text-align: center; font-weight: 600; color: #718096; }
       #wc-resultWrap tr:last-child td { border-bottom: none; }
       #wc-copyBtn {
-        margin-top: 10px; width: 100%; padding: 8px;
+        margin-top: 10px !important; width: 100%; padding: 8px !important;
         background: #fff; border: 1px solid #667eea; border-radius: 8px;
         color: #667eea; font-size: 12px; font-weight: 600; cursor: pointer;
       }
       #wc-copyBtn:hover { background: #667eea; color: #fff; }
     `).appendTo('head');
 
-    // ④ HTML 생성
+    // ⑤ HTML 생성
     const html = `
       <div id="wc-overlay"></div>
       <div id="wc-modal">
         <h1>📊 주간보고 크롤러 <span class="wc-close">✕</span></h1>
         <div class="wc-row">
           <div class="wc-field">
-            <label>시작일 (전주 월요일)</label>
+            <label>시작일<span class="wc-day-label" id="wc-startDay">${getDayLabel(lastWeek.start)}</span></label>
             <input type="date" id="wc-startDate" value="${lastWeek.start}" />
           </div>
           <div class="wc-field">
-            <label>종료일 (전주 금요일)</label>
+            <label>종료일<span class="wc-day-label" id="wc-endDay">${getDayLabel(lastWeek.end)}</span></label>
             <input type="date" id="wc-endDate" value="${lastWeek.end}" />
           </div>
         </div>
@@ -129,23 +144,31 @@
           <table>
             <thead>
               <tr>
-                <th></th>
-                <th>전년누계</th>
-                <th>금년누계</th>
-                <th>전년주간</th>
-                <th>금주주간</th>
+                <th rowspan="2">구분</th>
+                <th colspan="2" id="wc-th-annual">연간 누적</th>
+                <th colspan="2" id="wc-th-weekly">주간 누적</th>
+              </tr>
+              <tr>
+                <th style="width: 85px;" id="wc-th-py"></th>
+                <th style="width: 85px;" id="wc-th-cy"></th>
+                <th style="width: 85px;" id="wc-th-pw"></th>
+                <th style="width: 85px;" id="wc-th-cw"></th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="wc-label">항목1</td>
-                <td id="wc-r1c1"></td><td id="wc-r1c2"></td>
-                <td id="wc-r1c3"></td><td id="wc-r1c4"></td>
+                <td class="wc-label">방문자(명)</td>
+                <td id="wc-r1c1"></td>
+                <td id="wc-r1c2"></td>
+                <td id="wc-r1c3"></td>
+                <td id="wc-r1c4"></td>
               </tr>
               <tr>
-                <td class="wc-label">항목2</td>
-                <td id="wc-r2c1"></td><td id="wc-r2c2"></td>
-                <td id="wc-r2c3"></td><td id="wc-r2c4"></td>
+                <td class="wc-label">재방문(횟수)</td>
+                <td id="wc-r2c1"></td>
+                <td id="wc-r2c2"></td>
+                <td id="wc-r2c3"></td>
+                <td id="wc-r2c4"></td>
               </tr>
             </tbody>
           </table>
@@ -155,15 +178,23 @@
     `;
     $('body').append(html);
 
-    // ⑤ 닫기
+    // ⑥ input 변경 시 요일 라벨 업데이트
+    $('#wc-startDate').on('change', function () {
+      const val = $(this).val();
+      $('#wc-startDay').text(val ? getDayLabel(val) : '');
+    });
+    $('#wc-endDate').on('change', function () {
+      const val = $(this).val();
+      $('#wc-endDay').text(val ? getDayLabel(val) : '');
+    });
+
+    // ⑦ 닫기
     $(document).on('click', 'span.wc-close', () => {
       $('#wc-overlay, #wc-modal').remove();
       location.reload();
     });
 
-    // ⑥ 크롤링 로직
-    const formatDate = (date) => date.toISOString().split('T')[0];
-
+    // ⑧ 크롤링 로직
     const fetchStats = async (url) => {
       const res = await fetch(url, { credentials: 'include' });
       const html = await res.text();
@@ -229,6 +260,20 @@
       const A2 = new Date(A1); A2.setFullYear(A1.getFullYear() - 1);
       const B2 = new Date(B1); B2.setFullYear(B1.getFullYear() - 1);
 
+      // 테이블 헤더 동적 업데이트
+      const cyFull = A1.getFullYear();
+      const pyFull = cyFull - 1;
+      const cy = String(cyFull).slice(2) + '년';
+      const py = String(pyFull).slice(2) + '년';
+      const annualRange = `1.1 ~ ${getShortDate(inputEnd)}`;
+      const weeklyRange = `${getShortDate(inputStart)} ~ ${getShortDate(inputEnd)}`;
+      $('#wc-th-annual').text(`연간 누적(${annualRange})`);
+      $('#wc-th-weekly').text(`주간 누적(${weeklyRange})`);
+      $('#wc-th-py').text(py);
+      $('#wc-th-cy').text(cy);
+      $('#wc-th-pw').text(py);
+      $('#wc-th-cw').text(cy);
+
       const targets = {
         "전년누계": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${A2.getFullYear()}-01-01&end_date=${formatDate(A2)}`,
         "금년누계": `https://www.acecounter.com/stat/view/statview2_3.amz?srt_date=${A1.getFullYear()}-01-01&end_date=${formatDate(A1)}`,
@@ -261,7 +306,7 @@
       $('#wc-startBtn').prop('disabled', false);
     });
 
-    // ⑦ 클립보드 복사
+    // ⑨ 클립보드 복사
     $('#wc-copyBtn').on('click', async () => {
       await navigator.clipboard.writeText(lastOutput);
       $('#wc-copyBtn').text('✅ 복사완료!');
